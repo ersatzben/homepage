@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ersatzben homepage</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+      * {
+        box-sizing: border-box;
+      }
+
+      :root {
+        color-scheme: dark;
+        font-family: 'IBM Plex Mono', monospace;
+      }
+
+      body {
+        margin: 0;
+        padding: 1rem;
+        background: #0d1117;
+        color: #c9d1d9;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      main {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        margin: 0 0 1rem 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #f0f6fc;
+      }
+
+      input {
+        padding: 0.4rem 0.5rem;
+        border: 1px solid #30363d;
+        border-radius: 4px;
+        background: #0d1117;
+        color: #c9d1d9;
+        font-size: 11px;
+        font-family: 'IBM Plex Mono', monospace;
+        width: 240px;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: #58a6ff;
+      }
+
+      button {
+        padding: 0.4rem 0.75rem;
+        border: none;
+        border-radius: 4px;
+        background: #238636;
+        color: #fff;
+        font-size: 11px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      button:hover {
+        background: #2ea043;
+      }
+
+      button.secondary {
+        background: #21262d;
+        border: 1px solid #30363d;
+      }
+
+      button.secondary:hover {
+        background: #30363d;
+      }
+
+      #status {
+        margin-bottom: 0.75rem;
+        font-size: 11px;
+        color: #8b949e;
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 0.75rem;
+      }
+
+      li {
+        position: relative;
+      }
+
+      .card-link {
+        padding: 0.75rem;
+        background: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        transition: border-color 0.2s;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        text-decoration: none;
+        color: inherit;
+        cursor: pointer;
+      }
+
+      .card-link:hover {
+        border-color: #58a6ff;
+      }
+
+      .repo-name {
+        font-weight: 600;
+        font-size: 15px;
+        color: #58a6ff;
+      }
+
+      .readme-preview {
+        font-size: 11px;
+        color: #8b949e;
+        line-height: 1.4;
+        flex: 1;
+        word-break: break-word;
+      }
+
+      .readme-preview .first-line {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+        color: #c9d1d9;
+        margin-bottom: 0.25rem;
+      }
+
+      .readme-preview .remaining-lines {
+        display: block;
+        white-space: pre-wrap;
+      }
+
+      .readme-preview.loading {
+        opacity: 0.5;
+        font-style: italic;
+      }
+
+      .readme-preview.empty {
+        opacity: 0.5;
+        font-style: italic;
+      }
+
+      .meta {
+        font-size: 11px;
+        color: #6e7681;
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 500;
+        text-transform: uppercase;
+      }
+
+      .badge.private {
+        background: #6e40c9;
+        color: #fff;
+      }
+
+      .badge.public {
+        background: #1f6feb;
+        color: #fff;
+      }
+
+      .quick-links {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: space-between;
+      }
+
+      .quick-links-icons {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+      }
+
+      .pat-drawer {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .pat-toggle {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background: #161b22;
+        border: 1px solid #30363d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 18px;
+        color: #8b949e;
+      }
+
+      .pat-toggle:hover {
+        border-color: #58a6ff;
+        color: #58a6ff;
+      }
+
+      .pat-form {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        max-width: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition: all 0.3s ease;
+      }
+
+      .pat-form.expanded {
+        max-width: 400px;
+        opacity: 1;
+      }
+
+      .pat-form label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 11px;
+        color: #8b949e;
+        white-space: nowrap;
+      }
+
+      .quick-link {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background: #161b22;
+        border: 1px solid #30363d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .quick-link:hover {
+        border-color: #58a6ff;
+        transform: scale(1.1);
+      }
+
+      .quick-link img {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+      }
+
+      .quick-link img.larger {
+        width: 25px;
+        height: 25px;
+      }
+
+      .quick-link img.medium {
+        width: 23px;
+        height: 23px;
+      }
+
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="quick-links">
+        <div class="quick-links-icons">
+          <a href="https://web.whatsapp.com/" target="_blank" rel="noopener noreferrer" class="quick-link">
+            <img src="assets/favicons/whatsapp.svg" alt="WhatsApp">
+          </a>
+          <a href="https://mail.google.com/mail/u/0/#inbox" target="_blank" rel="noopener noreferrer" class="quick-link">
+            <img src="assets/favicons/gmail.png" alt="Gmail" class="larger">
+          </a>
+          <a href="https://outlook.office.com/mail/0/?deeplink=mail%2F0%2F%3Fnlp%3D0" target="_blank" rel="noopener noreferrer" class="quick-link">
+            <img src="assets/favicons/outlook.png" alt="Outlook" class="larger">
+          </a>
+          <a href="https://docs.google.com/document/u/0/" target="_blank" rel="noopener noreferrer" class="quick-link">
+            <img src="assets/favicons/googledocs.svg" alt="Google Docs">
+          </a>
+          <a href="https://x.com/home" target="_blank" rel="noopener noreferrer" class="quick-link">
+            <img src="assets/favicons/x.png" alt="X">
+          </a>
+          <a href="https://bsky.app/" target="_blank" rel="noopener noreferrer" class="quick-link">
+            <img src="assets/favicons/bluesky.png" alt="Bluesky">
+          </a>
+          <a href="https://science.works/" target="_blank" rel="noopener noreferrer" class="quick-link">
+            <img src="assets/favicons/sw_logo.png" alt="Science Works" class="larger">
+          </a>
+          <a href="https://studio.youtube.com/" target="_blank" rel="noopener noreferrer" class="quick-link">
+            <img src="assets/favicons/youtube.svg" alt="YouTube Studio">
+          </a>
+          <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" class="quick-link">
+            <img src="assets/favicons/openai_t.png" alt="ChatGPT" class="medium">
+          </a>
+          <a href="https://claude.ai/" target="_blank" rel="noopener noreferrer" class="quick-link">
+            <img src="assets/favicons/claude.png" alt="Claude">
+          </a>
+        </div>
+        <div class="pat-drawer">
+          <div class="pat-form" id="pat-form">
+            <label>
+              PAT
+              <input
+                type="password"
+                id="token"
+                placeholder="ghp_xxxxx..."
+                autocomplete="off"
+              />
+            </label>
+            <button type="button" id="load-btn">Load</button>
+            <button type="button" id="clear-token" class="secondary">Clear</button>
+          </div>
+          <div class="pat-toggle" id="pat-toggle">⚙</div>
+        </div>
+      </div>
+      <h1>ersatzben repositories</h1>
+      <div id="status">Ready.</div>
+      <ul id="repo-list"></ul>
+    </main>
+    <script>
+      const statusEl = document.getElementById("status");
+      const listEl = document.getElementById("repo-list");
+      const form = document.getElementById("token-form");
+      const handle = "ersatzben";
+
+      function formatDate(iso) {
+        return new Date(iso).toLocaleString();
+      }
+
+      function formatSize(kb) {
+        if (kb < 1024) return `${kb} KB`;
+        const mb = (kb / 1024).toFixed(1);
+        return `${mb} MB`;
+      }
+
+      async function fetchReadme(owner, repo, token) {
+        const url = `https://api.github.com/repos/${owner}/${repo}/readme`;
+        const headers = {
+          Accept: "application/vnd.github.raw+json",
+        };
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+
+        try {
+          const response = await fetch(url, { headers });
+          if (!response.ok) return null;
+          const text = await response.text();
+          // Get first 4 lines
+          const lines = text.split('\n').slice(0, 4).join('\n');
+          return lines;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      async function fetchRepos(token) {
+        const endpoint = token
+          ? "https://api.github.com/user/repos?per_page=100&type=all&sort=updated"
+          : `https://api.github.com/users/${handle}/repos?per_page=100&sort=updated`;
+
+        const headers = {
+          Accept: "application/vnd.github+json",
+        };
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+
+        const response = await fetch(endpoint, { headers });
+        if (response.status === 401) {
+          throw new Error("Token rejected (HTTP 401). Check scopes and value.");
+        }
+        if (response.status === 403) {
+          const rateLimitRemaining = response.headers.get('X-RateLimit-Remaining');
+          throw new Error(`GitHub API rate limit exceeded. Please provide a personal access token to continue.`);
+        }
+        if (!response.ok) {
+          const errorBody = await response.text();
+          throw new Error(`GitHub error (${response.status}): ${response.statusText}. ${errorBody}`);
+        }
+
+        const repos = await response.json();
+        return repos.sort(
+          (a, b) => new Date(b.updated_at) - new Date(a.updated_at)
+        );
+      }
+
+      async function renderRepos(repos, token) {
+        listEl.innerHTML = "";
+        const fragment = document.createDocumentFragment();
+
+        // Filter to only ersatzben repos
+        const filteredRepos = repos.filter(repo => repo.owner.login === 'ersatzben');
+
+        filteredRepos.forEach((repo) => {
+          const item = document.createElement("li");
+          item.innerHTML = `
+            <a href="${repo.html_url}" target="_blank" rel="noopener noreferrer" class="card-link">
+              <div class="repo-name">${repo.name}</div>
+              <div class="readme-preview loading" data-owner="${repo.owner.login}" data-repo="${repo.name}">Loading README...</div>
+              <div class="meta">
+                <span class="meta-item">Updated ${formatDate(repo.updated_at)}</span>
+                <span class="meta-item">${formatSize(repo.size)}</span>
+                <span class="badge ${repo.private ? "private" : "public"}">${
+                  repo.private ? "private" : "public"
+                }</span>
+              </div>
+            </a>
+          `;
+          fragment.appendChild(item);
+        });
+
+        listEl.appendChild(fragment);
+        statusEl.textContent = `Loaded ${filteredRepos.length} repo${
+          filteredRepos.length === 1 ? "" : "s"
+        }.`;
+
+        // Fetch READMEs asynchronously
+        filteredRepos.forEach(async (repo) => {
+          const readmeEl = listEl.querySelector(
+            `.readme-preview[data-owner="${repo.owner.login}"][data-repo="${repo.name}"]`
+          );
+          if (!readmeEl) return;
+
+          const readme = await fetchReadme(repo.owner.login, repo.name, token);
+          if (readme) {
+            const lines = readme.split('\n');
+            const firstLine = lines[0] || '';
+            const remainingLines = lines.slice(1).join('\n');
+            
+            readmeEl.innerHTML = `
+              <span class="first-line">${firstLine}</span>
+              <span class="remaining-lines">${remainingLines}</span>
+            `;
+            readmeEl.classList.remove('loading');
+          } else {
+            readmeEl.textContent = 'No README';
+            readmeEl.classList.remove('loading');
+            readmeEl.classList.add('empty');
+          }
+        });
+      }
+
+      async function load(token) {
+        statusEl.textContent = "Loading repositories…";
+        listEl.innerHTML = "";
+
+        try {
+          const repos = await fetchRepos(token);
+          await renderRepos(repos, token);
+          
+          // Save token to localStorage if provided
+          if (token) {
+            localStorage.setItem('github_pat', token);
+          }
+        } catch (error) {
+          statusEl.textContent = error.message;
+        }
+      }
+
+      // PAT drawer toggle
+      const patToggle = document.getElementById('pat-toggle');
+      const patForm = document.getElementById('pat-form');
+      
+      patToggle.addEventListener('click', () => {
+        patForm.classList.toggle('expanded');
+      });
+
+      document.getElementById("load-btn").addEventListener("click", () => {
+        const token = document.getElementById("token").value.trim();
+        load(token);
+      });
+
+      document.getElementById("clear-token").addEventListener("click", () => {
+        localStorage.removeItem('github_pat');
+        document.getElementById("token").value = '';
+        load("");
+      });
+
+      // Load saved token from localStorage
+      const savedToken = localStorage.getItem('github_pat') || '';
+      if (savedToken) {
+        document.getElementById("token").value = savedToken;
+        load(savedToken);
+      } else {
+        // Initial load without token
+        load("");
+      }
+    </script>
+  </body>
+</html>
+

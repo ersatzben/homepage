@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <path fill="#e0e0e0" d="M5.5 40.5h37v-25h-37z"/>
+  <path fill="#d9d9d9" d="M26.5 40.5h16v-25h-16z"/>
+  <path fill="#f5f5f5" d="M6.5 40.5h20v-25h-20z"/>
+  <path fill="#fff" d="M42.5 9.5h-37v8.75l18.5 12.75 18.5-12.75z"/>
+  <path fill="#d32f2f" d="M42.5 9.5l-18.5 12.75-18.5-12.75V6.5c0-1.1.9-2 2-2h33c1.1 0 2 .9 2 2z"/>
+  <path fill="#f44336" d="M42.5 9.5l-18.5 12.75-18.5-12.75v-3h37z"/>
+  <polygon fill="#b71c1c" points="24,22.25 5.5,9.5 5.5,40.5 24,40.5"/>
+  <polygon fill="#c62828" points="24,22.25 42.5,9.5 42.5,40.5 24,40.5"/>
+  <path fill="none" stroke="#fff" stroke-width="1" stroke-linecap="round" d="M5.5 9.5l18.5 12.75 18.5-12.75"/>
+</svg>
+
