@@ -504,7 +504,7 @@
               <button class="pin-btn ${isPinned ? 'pinned' : ''}" onclick="togglePin('${repo.name}', event)" title="${isPinned ? 'Unpin repository' : 'Pin repository'}">
                 ${isPinned ? '★' : '☆'}
               </button>
-              <a href="${repo.html_url}" target="_blank" rel="noopener noreferrer" class="card-link">
+              <a href="${repo.html_url}" rel="noopener noreferrer" class="card-link">
                 <div class="repo-name">${repo.name}</div>
                 <div class="readme-preview loading" data-owner="${repo.owner.login}" data-repo="${repo.name}">Loading README...</div>
                 <div class="meta">
