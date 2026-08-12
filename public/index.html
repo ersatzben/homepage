@@ -733,9 +733,9 @@
             ? `<p class="readme-preview">${repo.readme.map(esc).join('<br>')}</p>`
             : '';
 
-        // Prefer the repo's Website field; fall back to its GitHub Pages URL
-        // (which redirects if a custom domain is configured).
-        let siteUrl = repo.homepage;
+        // Prefer the repo's Website field, then the Pages config (which knows
+        // custom domains), then the predictable github.io URL.
+        let siteUrl = repo.homepage || repo.pages_url;
         if (!siteUrl && repo.has_pages) {
           siteUrl = `https://ersatzben.github.io/${repo.name}/`;
         }

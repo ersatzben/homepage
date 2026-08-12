@@ -3,7 +3,7 @@ const GH_API = 'https://api.github.com';
 const SESSION_COOKIE = 'desk_session';
 const SESSION_SECONDS = 30 * 24 * 60 * 60;
 const REPO_CACHE_SECONDS = 300;
-const README_FETCH_CAP = 40; // stays under the 50-subrequest free-plan limit
+const README_FETCH_CAP = 45; // README + Pages fetches share this budget, under the 50-subrequest free-plan limit
 
 const encoder = new TextEncoder();
 
@@ -107,6 +107,17 @@ async function fetchReadmePreview(repoName, env) {
   return readmeLines(await response.text());
 }
 
+// The Pages config carries the custom domain (e.g. science.works) when one is
+// set. Requires the token to have Pages: read — returns null without it.
+async function fetchPagesUrl(repoName, env) {
+  const response = await fetch(`${GH_API}/repos/${HANDLE}/${repoName}/pages`, {
+    headers: githubHeaders(env),
+  });
+  if (!response.ok) return null;
+  const data = await response.json();
+  return data.html_url || null;
+}
+
 async function fetchRepos(env) {
   const endpoint = env.GITHUB_TOKEN
     ? `${GH_API}/user/repos?per_page=100&type=all&sort=pushed`
@@ -137,10 +148,13 @@ async function fetchRepos(env) {
       archived: repo.archived,
     }));
 
-  // Attach README previews, within subrequest limits. Repos missing a GitHub
-  // description use the README's first line as one.
-  await Promise.all(
-    repos.slice(0, README_FETCH_CAP).map(async (repo) => {
+  // Attach README previews and Pages URLs in one batch, within the
+  // ~50-subrequest free-plan limit. Repos missing a GitHub description use the
+  // README's first line as one.
+  const pagesRepos = repos.filter((repo) => repo.has_pages);
+  const readmeCap = Math.max(0, README_FETCH_CAP - pagesRepos.length);
+  await Promise.all([
+    ...repos.slice(0, readmeCap).map(async (repo) => {
       try {
         let lines = await fetchReadmePreview(repo.name, env);
         if (!repo.description && lines.length > 0) {
@@ -151,8 +165,15 @@ async function fetchRepos(env) {
       } catch (error) {
         repo.readme = [];
       }
-    })
-  );
+    }),
+    ...pagesRepos.map(async (repo) => {
+      try {
+        repo.pages_url = await fetchPagesUrl(repo.name, env);
+      } catch (error) {
+        repo.pages_url = null;
+      }
+    }),
+  ]);
 
   return repos.sort((a, b) => new Date(b.pushed_at) - new Date(a.pushed_at));
 }
