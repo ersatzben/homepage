@@ -733,10 +733,16 @@
             ? `<p class="readme-preview">${repo.readme.map(esc).join('<br>')}</p>`
             : '';
 
+        // Prefer the repo's Website field; fall back to its GitHub Pages URL
+        // (which redirects if a custom domain is configured).
+        let siteUrl = repo.homepage;
+        if (!siteUrl && repo.has_pages) {
+          siteUrl = `https://ersatzben.github.io/${repo.name}/`;
+        }
         let homepage = '';
-        if (repo.homepage) {
-          const display = repo.homepage.replace(/^https?:\/\//, '').replace(/\/$/, '');
-          const href = /^https?:\/\//.test(repo.homepage) ? repo.homepage : `https://${repo.homepage}`;
+        if (siteUrl) {
+          const display = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+          const href = /^https?:\/\//.test(siteUrl) ? siteUrl : `https://${siteUrl}`;
           homepage = `<a href="${esc(href)}" rel="noopener noreferrer" class="homepage-link">${esc(display)}&nbsp;↗</a>`;
         }
 

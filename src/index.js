@@ -123,6 +123,7 @@ async function fetchRepos(env) {
       name: repo.name,
       html_url: repo.html_url,
       homepage: repo.homepage,
+      has_pages: repo.has_pages,
       description: repo.description,
       language: repo.language,
       stargazers_count: repo.stargazers_count,
