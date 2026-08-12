@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "desk",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],
+    "not_found_handling": "none"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "DESK_STORE",
+      "id": "5d3fd3f9484841688ce8fbb81c6eaad3"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}
