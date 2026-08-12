@@ -384,14 +384,6 @@
         border-radius: 3px;
         box-shadow: 0 1px 3px rgba(60, 50, 30, 0.08), 0 6px 16px rgba(60, 50, 30, 0.05);
         padding: 1rem 1.1rem 1.25rem;
-        background-image: repeating-linear-gradient(
-          to bottom,
-          transparent 0,
-          transparent 27px,
-          var(--pad-rule) 27px,
-          var(--pad-rule) 28px
-        );
-        background-position: 0 8px;
       }
 
       aside.todo h2 {
@@ -422,15 +414,31 @@
       .todo-item {
         display: flex;
         align-items: flex-start;
-        gap: 0.5rem;
-        padding: 0;
-        line-height: 28px;
+        gap: 0.4rem;
+        padding: 0.25rem 0;
+        line-height: 1.5;
         font-size: 13px;
+      }
+
+      .todo-item.dragging {
+        opacity: 0.4;
+      }
+
+      .todo-drag {
+        color: var(--faint);
+        cursor: grab;
+        opacity: 0;
+        user-select: none;
+        letter-spacing: -1px;
+      }
+
+      .todo-item:hover .todo-drag {
+        opacity: 1;
       }
 
       .todo-item input[type='checkbox'] {
         accent-color: var(--accent);
-        margin-top: 8px;
+        margin-top: 2px;
         cursor: pointer;
       }
 
@@ -468,7 +476,7 @@
         color: var(--faint);
         font-style: italic;
         font-size: 13px;
-        line-height: 28px;
+        padding: 0.25rem 0;
       }
 
       .todo-foot {
@@ -802,7 +810,8 @@
           todoListEl.innerHTML = todos
             .map(
               (todo, i) => `
-                <li class="todo-item ${todo.done ? 'done' : ''}">
+                <li class="todo-item ${todo.done ? 'done' : ''}" draggable="true" data-index="${i}">
+                  <span class="todo-drag" title="Drag to reorder">⠿</span>
                   <input type="checkbox" id="todo-${i}" data-toggle="${i}" ${todo.done ? 'checked' : ''} />
                   <label for="todo-${i}">${esc(todo.text)}</label>
                   <button class="todo-del" data-del="${i}" title="Remove">×</button>
@@ -846,6 +855,41 @@
           renderTodos();
           saveTodos();
         }
+      });
+
+      // Drag to reorder: move the dragged row live as the pointer passes row
+      // midpoints, then rebuild the list from DOM order on release.
+      let dragEl = null;
+
+      todoListEl.addEventListener('dragstart', (event) => {
+        const item = event.target.closest('.todo-item');
+        if (!item) return;
+        dragEl = item;
+        item.classList.add('dragging');
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', '');
+      });
+
+      todoListEl.addEventListener('dragover', (event) => {
+        if (!dragEl) return;
+        event.preventDefault();
+        const over = event.target.closest('.todo-item');
+        if (!over || over === dragEl) return;
+        const rect = over.getBoundingClientRect();
+        const before = event.clientY < rect.top + rect.height / 2;
+        todoListEl.insertBefore(dragEl, before ? over : over.nextSibling);
+      });
+
+      todoListEl.addEventListener('dragend', () => {
+        if (!dragEl) return;
+        dragEl.classList.remove('dragging');
+        dragEl = null;
+        const order = [...todoListEl.querySelectorAll('.todo-item')].map((el) =>
+          Number(el.dataset.index)
+        );
+        todos = order.map((i) => todos[i]);
+        renderTodos();
+        saveTodos();
       });
 
       document.getElementById('todo-clear').addEventListener('click', () => {
