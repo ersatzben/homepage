@@ -6,7 +6,7 @@
     <title>ersatzben desk</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Public+Sans:wght@400;500;600&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,600&family=Public+Sans:wght@400;500;600&display=swap');
 
       * {
         box-sizing: border-box;
@@ -14,7 +14,7 @@
 
       :root {
         color-scheme: light;
-        --paper: #fcfaf5;
+        --paper: #f2eee4;
         --ink: #2a2620;
         --muted: #837b6c;
         --faint: #a39a89;
@@ -22,62 +22,74 @@
         --accent: #38614a;
         --pin: #c08b1d;
         --pad: #fffdf4;
-        --pad-rule: #ece5d2;
         font-family: 'Public Sans', -apple-system, sans-serif;
+      }
+
+      html,
+      body {
+        height: 100%;
       }
 
       body {
         margin: 0;
-        padding: 2rem 1.5rem 4rem;
         background: var(--paper);
         color: var(--ink);
         font-size: 14px;
         line-height: 1.5;
+        overflow: hidden;
       }
 
-      main {
-        max-width: 1080px;
-        margin: 0 auto;
-      }
+      /* ---------- menu bar ---------- */
 
-      /* ---------- header ---------- */
-
-      header.site {
+      #menubar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 44px;
         display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 1rem 2rem;
+        align-items: center;
+        gap: 1.25rem;
+        padding: 0 1rem;
+        background: var(--pad);
         border-bottom: 2px solid var(--ink);
-        padding-bottom: 0.75rem;
-        margin-bottom: 0.5rem;
+        z-index: 5000;
       }
 
-      h1 {
-        margin: 0;
+      .menu-title {
         font-family: 'Newsreader', Georgia, serif;
-        font-size: 2.1rem;
+        font-size: 1.15rem;
         font-weight: 600;
-        letter-spacing: -0.01em;
+        white-space: nowrap;
       }
 
-      h1 .dim {
+      .menu-title .dim {
         color: var(--faint);
         font-weight: 400;
         font-style: italic;
       }
 
+      #status {
+        font-size: 11px;
+        color: var(--muted);
+        font-style: italic;
+        font-family: 'Newsreader', Georgia, serif;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+      }
+
       .quick-links {
         display: flex;
-        gap: 0.25rem;
+        gap: 0.1rem;
         align-items: center;
-        flex-wrap: wrap;
       }
 
       .quick-link {
-        width: 32px;
-        height: 32px;
-        border-radius: 6px;
+        width: 28px;
+        height: 28px;
+        border-radius: 5px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -89,36 +101,18 @@
       }
 
       .quick-link img {
-        width: 18px;
-        height: 18px;
+        width: 16px;
+        height: 16px;
         object-fit: contain;
         filter: saturate(0.85);
       }
 
-      /* ---------- toolbar ---------- */
-
-      .toolbar {
+      .menu-actions {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        margin-bottom: 1.75rem;
-        min-height: 30px;
+        gap: 0.9rem;
       }
 
-      #status {
-        font-size: 12px;
-        color: var(--muted);
-        font-style: italic;
-        font-family: 'Newsreader', Georgia, serif;
-      }
-
-      .toolbar-actions {
-        display: flex;
-        gap: 1rem;
-      }
-
-      .toolbar-actions[hidden] {
+      .menu-actions[hidden] {
         display: none;
       }
 
@@ -133,11 +127,156 @@
         text-decoration-style: dotted;
         text-underline-offset: 3px;
         font-family: inherit;
+        white-space: nowrap;
       }
 
       .text-btn:hover {
         color: var(--accent);
       }
+
+      /* ---------- desk ---------- */
+
+      #desk {
+        position: fixed;
+        top: 44px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow: hidden;
+      }
+
+      /* ---------- windows ---------- */
+
+      .win {
+        position: absolute;
+        display: none;
+        flex-direction: column;
+        background: var(--pad);
+        border: 1.5px solid var(--ink);
+        border-radius: 3px;
+        box-shadow: 3px 3px 0 rgba(42, 38, 32, 0.12);
+        min-width: 260px;
+        min-height: 160px;
+      }
+
+      body.authed .win {
+        display: flex;
+      }
+
+      .win.front {
+        box-shadow: 5px 5px 0 rgba(42, 38, 32, 0.18);
+      }
+
+      .win-title {
+        position: relative;
+        flex-shrink: 0;
+        height: 30px;
+        margin: 3px;
+        cursor: grab;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: none;
+        border-bottom: 1px solid var(--rule);
+      }
+
+      /* Classic desktop: only the front window shows its title-bar pinstripes. */
+      .win.front .win-title {
+        background-image: repeating-linear-gradient(
+          to bottom,
+          transparent 0,
+          transparent 3px,
+          var(--rule) 3px,
+          var(--rule) 4px
+        );
+        background-position: 0 5px;
+        background-size: 100% 20px;
+        background-repeat: no-repeat;
+      }
+
+      .win-title:active {
+        cursor: grabbing;
+      }
+
+      .win-title-text {
+        position: absolute;
+        left: 50%;
+        top: 45%;
+        transform: translate(-50%, -50%);
+        background: var(--pad);
+        padding: 0 12px;
+        font-family: 'Newsreader', Georgia, serif;
+        font-size: 15px;
+        font-style: italic;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .win-body {
+        flex: 1;
+        overflow: auto;
+        padding: 0.5rem 1rem 1rem;
+      }
+
+      .win-resize {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 18px;
+        height: 18px;
+        cursor: nwse-resize;
+        touch-action: none;
+        background:
+          linear-gradient(135deg, transparent 0 8px, var(--faint) 8px 9px, transparent 9px 12px, var(--faint) 12px 13px, transparent 13px);
+      }
+
+      /* ---------- login ---------- */
+
+      .login {
+        display: none;
+        position: absolute;
+        left: 50%;
+        top: 34%;
+        transform: translate(-50%, -50%);
+        width: min(340px, calc(100vw - 3rem));
+        background: var(--pad);
+        border: 1.5px solid var(--ink);
+        border-radius: 3px;
+        box-shadow: 5px 5px 0 rgba(42, 38, 32, 0.18);
+        padding: 1.5rem 1.5rem 1.75rem;
+        text-align: center;
+      }
+
+      .login.visible {
+        display: block;
+      }
+
+      .login h2 {
+        margin: 0 0 1rem;
+        font-family: 'Newsreader', Georgia, serif;
+        font-size: 1.3rem;
+        font-weight: 600;
+        font-style: italic;
+      }
+
+      .login form {
+        display: flex;
+        gap: 0.4rem;
+        justify-content: center;
+      }
+
+      .login input {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .login-error {
+        margin-top: 0.75rem;
+        font-size: 12px;
+        color: #a04030;
+        min-height: 1em;
+      }
+
+      /* ---------- shared form bits ---------- */
 
       input[type='password'],
       input[type='text'] {
@@ -172,62 +311,6 @@
         color: var(--accent);
       }
 
-      /* ---------- login ---------- */
-
-      .login {
-        display: none;
-        margin: 4rem auto 0;
-        max-width: 340px;
-        background: var(--pad);
-        border: 1px solid var(--rule);
-        border-radius: 3px;
-        box-shadow: 0 1px 3px rgba(60, 50, 30, 0.08), 0 6px 16px rgba(60, 50, 30, 0.05);
-        padding: 1.5rem 1.5rem 1.75rem;
-        text-align: center;
-      }
-
-      .login.visible {
-        display: block;
-      }
-
-      .login h2 {
-        margin: 0 0 1rem;
-        font-family: 'Newsreader', Georgia, serif;
-        font-size: 1.3rem;
-        font-weight: 600;
-        font-style: italic;
-      }
-
-      .login form {
-        display: flex;
-        gap: 0.4rem;
-        justify-content: center;
-      }
-
-      .login input {
-        flex: 1;
-      }
-
-      .login-error {
-        margin-top: 0.75rem;
-        font-size: 12px;
-        color: #a04030;
-        min-height: 1em;
-      }
-
-      /* ---------- layout ---------- */
-
-      .columns {
-        display: none;
-        grid-template-columns: minmax(0, 1fr) 300px;
-        gap: 3rem;
-        align-items: start;
-      }
-
-      .columns.visible {
-        display: grid;
-      }
-
       /* ---------- repo list ---------- */
 
       ul.repos {
@@ -238,9 +321,13 @@
 
       .repo-row {
         display: grid;
-        grid-template-columns: 28px minmax(0, 1fr);
-        padding: 0.85rem 0;
+        grid-template-columns: 26px minmax(0, 1fr);
+        padding: 0.7rem 0;
         border-bottom: 1px solid var(--rule);
+      }
+
+      .repo-row:last-child {
+        border-bottom: none;
       }
 
       .pin-btn {
@@ -280,7 +367,7 @@
 
       .repo-name {
         font-family: 'Newsreader', Georgia, serif;
-        font-size: 18px;
+        font-size: 17px;
         font-weight: 600;
         color: var(--ink);
         text-decoration: none;
@@ -291,18 +378,6 @@
         text-decoration: underline;
         text-underline-offset: 3px;
         text-decoration-thickness: 1px;
-      }
-
-      .tag {
-        font-size: 10px;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--muted);
-        border: 1px solid var(--rule);
-        border-radius: 3px;
-        padding: 0 5px;
-        line-height: 1.6;
       }
 
       .homepage-link {
@@ -316,6 +391,18 @@
 
       .homepage-link:hover {
         text-decoration-style: solid;
+      }
+
+      .tag {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        border: 1px solid var(--rule);
+        border-radius: 3px;
+        padding: 0 5px;
+        line-height: 1.6;
       }
 
       .tag.private {
@@ -349,7 +436,7 @@
       }
 
       .meta {
-        font-size: 12px;
+        font-size: 11.5px;
         color: var(--muted);
         display: flex;
         gap: 0.35rem 0;
@@ -360,7 +447,7 @@
 
       .meta > span + span::before {
         content: '·';
-        margin: 0 0.5rem;
+        margin: 0 0.45rem;
         color: var(--faint);
       }
 
@@ -374,34 +461,17 @@
         background: var(--faint);
       }
 
-      /* ---------- to-do pad ---------- */
-
-      aside.todo {
-        position: sticky;
-        top: 1.5rem;
-        background: var(--pad);
-        border: 1px solid var(--rule);
-        border-radius: 3px;
-        box-shadow: 0 1px 3px rgba(60, 50, 30, 0.08), 0 6px 16px rgba(60, 50, 30, 0.05);
-        padding: 1rem 1.1rem 1.25rem;
-      }
-
-      aside.todo h2 {
-        margin: 0 0 0.75rem;
-        font-family: 'Newsreader', Georgia, serif;
-        font-size: 1.25rem;
-        font-weight: 600;
-        font-style: italic;
-      }
+      /* ---------- lists ---------- */
 
       .todo-add {
         display: flex;
         gap: 0.4rem;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.6rem;
       }
 
       .todo-add input {
         flex: 1;
+        min-width: 0;
         background: #fff;
       }
 
@@ -480,7 +550,7 @@
       }
 
       .todo-foot {
-        margin-top: 0.75rem;
+        margin-top: 0.6rem;
         font-size: 11px;
         color: var(--faint);
         display: flex;
@@ -505,64 +575,99 @@
         border-color: transparent;
       }
 
-      /* ---------- responsive ---------- */
+      /* ---------- small screens: stack the windows ---------- */
 
       @media (max-width: 860px) {
-        .columns.visible {
-          grid-template-columns: 1fr;
-          gap: 2rem;
+        body {
+          overflow: auto;
         }
 
-        aside.todo {
+        #menubar {
+          position: sticky;
+          height: auto;
+          flex-wrap: wrap;
+          padding: 0.5rem 1rem;
+          gap: 0.5rem 1.25rem;
+        }
+
+        #status {
+          flex-basis: 100%;
+          order: 10;
+        }
+
+        #desk {
           position: static;
-          order: -1;
+          overflow: visible;
+          padding: 1rem;
+        }
+
+        .win {
+          position: static !important;
+          width: auto !important;
+          height: auto !important;
+          margin-bottom: 1rem;
+        }
+
+        .win-title {
+          cursor: default;
+        }
+
+        .win-body {
+          max-height: 70vh;
+        }
+
+        .win-resize {
+          display: none;
+        }
+
+        .login {
+          position: static;
+          transform: none;
+          margin: 4rem auto 0;
         }
       }
     </style>
   </head>
   <body>
-    <main>
-      <header class="site">
-        <h1>ersatzben <span class="dim">/ desk</span></h1>
-        <nav class="quick-links">
-          <a href="https://web.whatsapp.com/" rel="noopener noreferrer" class="quick-link" title="WhatsApp">
-            <img src="assets/favicons/whatsapp.svg" alt="WhatsApp">
-          </a>
-          <a href="https://mail.google.com/mail/u/0/#inbox" rel="noopener noreferrer" class="quick-link" title="Gmail">
-            <img src="assets/favicons/gmail.png" alt="Gmail">
-          </a>
-          <a href="https://outlook.office.com/mail/0/?deeplink=mail%2F0%2F%3Fnlp%3D0" rel="noopener noreferrer" class="quick-link" title="Outlook">
-            <img src="assets/favicons/outlook.png" alt="Outlook">
-          </a>
-          <a href="https://docs.google.com/document/u/0/" rel="noopener noreferrer" class="quick-link" title="Google Docs">
-            <img src="assets/favicons/googledocs.svg" alt="Google Docs">
-          </a>
-          <a href="https://x.com/home" rel="noopener noreferrer" class="quick-link" title="X">
-            <img src="assets/favicons/x.png" alt="X">
-          </a>
-          <a href="https://bsky.app/" rel="noopener noreferrer" class="quick-link" title="Bluesky">
-            <img src="assets/favicons/bluesky.png" alt="Bluesky">
-          </a>
-          <a href="https://studio.youtube.com/" rel="noopener noreferrer" class="quick-link" title="YouTube Studio">
-            <img src="assets/favicons/youtube.svg" alt="YouTube Studio">
-          </a>
-          <a href="https://chatgpt.com/" rel="noopener noreferrer" class="quick-link" title="ChatGPT">
-            <img src="assets/favicons/chatgpt.png" alt="ChatGPT">
-          </a>
-          <a href="https://claude.ai/" rel="noopener noreferrer" class="quick-link" title="Claude">
-            <img src="assets/favicons/claude.png" alt="Claude">
-          </a>
-        </nav>
-      </header>
-
-      <div class="toolbar">
-        <div id="status">&nbsp;</div>
-        <div class="toolbar-actions" id="toolbar-actions" hidden>
-          <button type="button" class="text-btn" id="refresh-btn">refresh</button>
-          <button type="button" class="text-btn" id="logout-btn">sign out</button>
-        </div>
+    <header id="menubar">
+      <span class="menu-title">ersatzben <span class="dim">/ desk</span></span>
+      <div id="status">&nbsp;</div>
+      <nav class="quick-links">
+        <a href="https://web.whatsapp.com/" rel="noopener noreferrer" class="quick-link" title="WhatsApp">
+          <img src="assets/favicons/whatsapp.svg" alt="WhatsApp">
+        </a>
+        <a href="https://mail.google.com/mail/u/0/#inbox" rel="noopener noreferrer" class="quick-link" title="Gmail">
+          <img src="assets/favicons/gmail.png" alt="Gmail">
+        </a>
+        <a href="https://outlook.office.com/mail/0/?deeplink=mail%2F0%2F%3Fnlp%3D0" rel="noopener noreferrer" class="quick-link" title="Outlook">
+          <img src="assets/favicons/outlook.png" alt="Outlook">
+        </a>
+        <a href="https://docs.google.com/document/u/0/" rel="noopener noreferrer" class="quick-link" title="Google Docs">
+          <img src="assets/favicons/googledocs.svg" alt="Google Docs">
+        </a>
+        <a href="https://x.com/home" rel="noopener noreferrer" class="quick-link" title="X">
+          <img src="assets/favicons/x.png" alt="X">
+        </a>
+        <a href="https://bsky.app/" rel="noopener noreferrer" class="quick-link" title="Bluesky">
+          <img src="assets/favicons/bluesky.png" alt="Bluesky">
+        </a>
+        <a href="https://studio.youtube.com/" rel="noopener noreferrer" class="quick-link" title="YouTube Studio">
+          <img src="assets/favicons/youtube.svg" alt="YouTube Studio">
+        </a>
+        <a href="https://chatgpt.com/" rel="noopener noreferrer" class="quick-link" title="ChatGPT">
+          <img src="assets/favicons/chatgpt.png" alt="ChatGPT">
+        </a>
+        <a href="https://claude.ai/" rel="noopener noreferrer" class="quick-link" title="Claude">
+          <img src="assets/favicons/claude.png" alt="Claude">
+        </a>
+      </nav>
+      <div class="menu-actions" id="toolbar-actions" hidden>
+        <button type="button" class="text-btn" id="refresh-btn">refresh</button>
+        <button type="button" class="text-btn" id="logout-btn">sign out</button>
       </div>
+    </header>
 
+    <div id="desk">
       <section class="login" id="login">
         <h2>Who goes there?</h2>
         <form id="login-form">
@@ -578,36 +683,73 @@
         <div class="login-error" id="login-error"></div>
       </section>
 
-      <div class="columns" id="columns">
-        <section>
+      <section class="win" data-box="repos">
+        <div class="win-title"><span class="win-title-text">Repositories</span></div>
+        <div class="win-body">
           <ul class="repos" id="repo-list"></ul>
-        </section>
+        </div>
+        <div class="win-resize"></div>
+      </section>
 
-        <aside class="todo">
-          <h2>To do</h2>
+      <section class="win list-win" data-box="todo" data-list="todo">
+        <div class="win-title"><span class="win-title-text">To do</span></div>
+        <div class="win-body">
           <div class="todo-add">
-            <input type="text" id="todo-input" placeholder="Add an item…" aria-label="New to-do item" />
-            <button type="button" id="todo-add-btn">Add</button>
+            <input type="text" class="todo-input" placeholder="Add an item…" aria-label="New item" />
+            <button type="button" class="todo-add-btn">Add</button>
           </div>
-          <ul class="todo-list" id="todo-list"></ul>
+          <ul class="todo-list"></ul>
           <div class="todo-foot">
-            <span id="todo-count"></span>
-            <button type="button" class="todo-clear" id="todo-clear">clear done</button>
+            <span class="todo-count"></span>
+            <button type="button" class="todo-clear">clear done</button>
           </div>
-        </aside>
-      </div>
-    </main>
+        </div>
+        <div class="win-resize"></div>
+      </section>
+
+      <section class="win list-win" data-box="writing" data-list="writing">
+        <div class="win-title"><span class="win-title-text">Writing ideas</span></div>
+        <div class="win-body">
+          <div class="todo-add">
+            <input type="text" class="todo-input" placeholder="Add an idea…" aria-label="New idea" />
+            <button type="button" class="todo-add-btn">Add</button>
+          </div>
+          <ul class="todo-list"></ul>
+          <div class="todo-foot">
+            <span class="todo-count"></span>
+            <button type="button" class="todo-clear">clear done</button>
+          </div>
+        </div>
+        <div class="win-resize"></div>
+      </section>
+
+      <section class="win list-win" data-box="today" data-list="today">
+        <div class="win-title"><span class="win-title-text">Today</span></div>
+        <div class="win-body">
+          <div class="todo-add">
+            <input type="text" class="todo-input" placeholder="Add an item…" aria-label="New item" />
+            <button type="button" class="todo-add-btn">Add</button>
+          </div>
+          <ul class="todo-list"></ul>
+          <div class="todo-foot">
+            <span class="todo-count"></span>
+            <button type="button" class="todo-clear">clear done</button>
+          </div>
+        </div>
+        <div class="win-resize"></div>
+      </section>
+    </div>
 
     <script>
       const statusEl = document.getElementById('status');
-      const listEl = document.getElementById('repo-list');
+      const repoListEl = document.getElementById('repo-list');
       const loginEl = document.getElementById('login');
-      const columnsEl = document.getElementById('columns');
       const toolbarActionsEl = document.getElementById('toolbar-actions');
+      const deskEl = document.getElementById('desk');
 
       let repos = [];
       let pins = [];
-      let todos = [];
+      let lists = { todo: [], writing: [], today: [] };
       let tokenPresent = false;
 
       function esc(value) {
@@ -689,7 +831,7 @@
 
       function showLogin() {
         loginEl.classList.add('visible');
-        columnsEl.classList.remove('visible');
+        document.body.classList.remove('authed');
         toolbarActionsEl.hidden = true;
         statusEl.innerHTML = '&nbsp;';
         document.getElementById('passphrase').focus();
@@ -697,9 +839,146 @@
 
       function showDesk() {
         loginEl.classList.remove('visible');
-        columnsEl.classList.add('visible');
+        document.body.classList.add('authed');
         toolbarActionsEl.hidden = false;
       }
+
+      // ---------- windows ----------
+
+      const DEFAULT_LAYOUT = {
+        repos: { x: 24, y: 24, w: 640, h: 0, z: 1 },
+        todo: { x: 688, y: 24, w: 340, h: 300, z: 2 },
+        writing: { x: 688, y: 348, w: 340, h: 300, z: 3 },
+        today: { x: 1052, y: 24, w: 340, h: 300, z: 4 },
+      };
+
+      let layout = {};
+      let topZ = 10;
+      const winEls = {};
+
+      function clampBox(box) {
+        const deskW = deskEl.clientWidth;
+        const deskH = deskEl.clientHeight;
+        const b = { ...box };
+        b.w = Math.max(260, Math.min(b.w, deskW));
+        b.h = Math.max(160, Math.min(b.h, deskH));
+        b.x = Math.max(0, Math.min(b.x, deskW - 100));
+        b.y = Math.max(0, Math.min(b.y, deskH - 60));
+        return b;
+      }
+
+      function applyLayout() {
+        const deskH = deskEl.clientHeight;
+        for (const [id, el] of Object.entries(winEls)) {
+          const fallback = { ...DEFAULT_LAYOUT[id] };
+          if (id === 'repos' && !fallback.h) fallback.h = Math.max(300, deskH - 48);
+          const box = clampBox(layout[id] || fallback);
+          layout[id] = box;
+          el.style.left = `${box.x}px`;
+          el.style.top = `${box.y}px`;
+          el.style.width = `${box.w}px`;
+          el.style.height = `${box.h}px`;
+          el.style.zIndex = box.z;
+          topZ = Math.max(topZ, box.z);
+        }
+        markFront();
+      }
+
+      function markFront() {
+        let frontEl = null;
+        let best = -Infinity;
+        for (const [id, el] of Object.entries(winEls)) {
+          el.classList.remove('front');
+          if ((layout[id]?.z || 0) > best) {
+            best = layout[id]?.z || 0;
+            frontEl = el;
+          }
+        }
+        if (frontEl) frontEl.classList.add('front');
+      }
+
+      let layoutTimer = null;
+      function saveLayout() {
+        clearTimeout(layoutTimer);
+        layoutTimer = setTimeout(() => {
+          api('/api/layout', { method: 'PUT', body: JSON.stringify(layout) }).catch(() => {});
+        }, 500);
+      }
+
+      function bringToFront(id) {
+        if (!layout[id]) return;
+        if (layout[id].z !== topZ) {
+          layout[id].z = ++topZ;
+          winEls[id].style.zIndex = topZ;
+          markFront();
+          saveLayout();
+        }
+      }
+
+      const isMobile = () => window.matchMedia('(max-width: 860px)').matches;
+
+      function setupWindow(el) {
+        const id = el.dataset.box;
+        winEls[id] = el;
+
+        el.addEventListener('pointerdown', () => bringToFront(id));
+
+        const title = el.querySelector('.win-title');
+        title.addEventListener('pointerdown', (event) => {
+          if (isMobile() || event.button !== 0) return;
+          event.preventDefault();
+          const startX = event.clientX;
+          const startY = event.clientY;
+          const orig = { ...layout[id] };
+          const move = (e) => {
+            layout[id] = clampBox({
+              ...layout[id],
+              x: orig.x + (e.clientX - startX),
+              y: orig.y + (e.clientY - startY),
+            });
+            el.style.left = `${layout[id].x}px`;
+            el.style.top = `${layout[id].y}px`;
+          };
+          const up = () => {
+            window.removeEventListener('pointermove', move);
+            window.removeEventListener('pointerup', up);
+            saveLayout();
+          };
+          window.addEventListener('pointermove', move);
+          window.addEventListener('pointerup', up);
+        });
+
+        const resize = el.querySelector('.win-resize');
+        resize.addEventListener('pointerdown', (event) => {
+          if (isMobile() || event.button !== 0) return;
+          event.preventDefault();
+          event.stopPropagation();
+          bringToFront(id);
+          const startX = event.clientX;
+          const startY = event.clientY;
+          const orig = { ...layout[id] };
+          const move = (e) => {
+            layout[id] = clampBox({
+              ...layout[id],
+              w: orig.w + (e.clientX - startX),
+              h: orig.h + (e.clientY - startY),
+            });
+            el.style.width = `${layout[id].w}px`;
+            el.style.height = `${layout[id].h}px`;
+          };
+          const up = () => {
+            window.removeEventListener('pointermove', move);
+            window.removeEventListener('pointerup', up);
+            saveLayout();
+          };
+          window.addEventListener('pointermove', move);
+          window.addEventListener('pointerup', up);
+        });
+      }
+
+      window.addEventListener('resize', () => {
+        if (!isMobile()) applyLayout();
+      });
 
       // ---------- repos ----------
 
@@ -776,7 +1055,7 @@
         const pinned = repos.filter((repo) => pins.includes(repo.name));
         const rest = repos.filter((repo) => !pins.includes(repo.name));
 
-        listEl.innerHTML = [
+        repoListEl.innerHTML = [
           ...pinned.map((repo) => repoRow(repo, true)),
           ...rest.map((repo) => repoRow(repo, false)),
         ].join('');
@@ -788,7 +1067,7 @@
         }
       }
 
-      listEl.addEventListener('click', (event) => {
+      repoListEl.addEventListener('click', (event) => {
         const btn = event.target.closest('[data-pin]');
         if (!btn) return;
         event.preventDefault();
@@ -798,105 +1077,117 @@
         api('/api/pins', { method: 'PUT', body: JSON.stringify(pins) }).catch(() => {});
       });
 
-      // ---------- to-dos ----------
+      // ---------- lists ----------
 
-      const todoListEl = document.getElementById('todo-list');
-      const todoInput = document.getElementById('todo-input');
+      const listRenderers = {};
 
-      function renderTodos() {
-        if (todos.length === 0) {
-          todoListEl.innerHTML = '<li class="todo-empty">Nothing on the list.</li>';
-        } else {
-          todoListEl.innerHTML = todos
-            .map(
-              (todo, i) => `
-                <li class="todo-item ${todo.done ? 'done' : ''}" draggable="true" data-index="${i}">
-                  <span class="todo-drag" title="Drag to reorder">⠿</span>
-                  <input type="checkbox" id="todo-${i}" data-toggle="${i}" ${todo.done ? 'checked' : ''} />
-                  <label for="todo-${i}">${esc(todo.text)}</label>
-                  <button class="todo-del" data-del="${i}" title="Remove">×</button>
-                </li>
-              `
-            )
-            .join('');
+      function setupList(boxEl) {
+        const id = boxEl.dataset.list;
+        const listEl = boxEl.querySelector('.todo-list');
+        const input = boxEl.querySelector('.todo-input');
+        const countEl = boxEl.querySelector('.todo-count');
+
+        function save() {
+          api(`/api/lists/${id}`, { method: 'PUT', body: JSON.stringify(lists[id]) }).catch(() => {});
         }
-        const open = todos.filter((todo) => !todo.done).length;
-        document.getElementById('todo-count').textContent = todos.length === 0 ? '' : `${open} open`;
-      }
 
-      function saveTodos() {
-        api('/api/todos', { method: 'PUT', body: JSON.stringify(todos) }).catch(() => {});
-      }
-
-      function addTodo() {
-        const text = todoInput.value.trim();
-        if (!text) return;
-        todos.push({ text, done: false });
-        todoInput.value = '';
-        renderTodos();
-        saveTodos();
-        todoInput.focus();
-      }
-
-      document.getElementById('todo-add-btn').addEventListener('click', addTodo);
-      todoInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') addTodo();
-      });
-
-      todoListEl.addEventListener('click', (event) => {
-        const toggle = event.target.closest('[data-toggle]');
-        const del = event.target.closest('[data-del]');
-        if (toggle) {
-          todos[Number(toggle.dataset.toggle)].done = toggle.checked;
-          renderTodos();
-          saveTodos();
-        } else if (del) {
-          todos.splice(Number(del.dataset.del), 1);
-          renderTodos();
-          saveTodos();
+        function render() {
+          const items = lists[id];
+          if (items.length === 0) {
+            listEl.innerHTML = '<li class="todo-empty">Nothing on the list.</li>';
+          } else {
+            listEl.innerHTML = items
+              .map(
+                (todo, i) => `
+                  <li class="todo-item ${todo.done ? 'done' : ''}" draggable="true" data-index="${i}">
+                    <span class="todo-drag" title="Drag to reorder">⠿</span>
+                    <input type="checkbox" id="todo-${id}-${i}" data-toggle="${i}" ${todo.done ? 'checked' : ''} />
+                    <label for="todo-${id}-${i}">${esc(todo.text)}</label>
+                    <button class="todo-del" data-del="${i}" title="Remove">×</button>
+                  </li>
+                `
+              )
+              .join('');
+          }
+          const open = items.filter((todo) => !todo.done).length;
+          countEl.textContent = items.length === 0 ? '' : `${open} open`;
         }
-      });
+        listRenderers[id] = render;
 
-      // Drag to reorder: move the dragged row live as the pointer passes row
-      // midpoints, then rebuild the list from DOM order on release.
-      let dragEl = null;
+        function add() {
+          const text = input.value.trim();
+          if (!text) return;
+          lists[id].push({ text, done: false });
+          input.value = '';
+          render();
+          save();
+          input.focus();
+        }
 
-      todoListEl.addEventListener('dragstart', (event) => {
-        const item = event.target.closest('.todo-item');
-        if (!item) return;
-        dragEl = item;
-        item.classList.add('dragging');
-        event.dataTransfer.effectAllowed = 'move';
-        event.dataTransfer.setData('text/plain', '');
-      });
+        boxEl.querySelector('.todo-add-btn').addEventListener('click', add);
+        input.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') add();
+        });
 
-      todoListEl.addEventListener('dragover', (event) => {
-        if (!dragEl) return;
-        event.preventDefault();
-        const over = event.target.closest('.todo-item');
-        if (!over || over === dragEl) return;
-        const rect = over.getBoundingClientRect();
-        const before = event.clientY < rect.top + rect.height / 2;
-        todoListEl.insertBefore(dragEl, before ? over : over.nextSibling);
-      });
+        listEl.addEventListener('click', (event) => {
+          const toggle = event.target.closest('[data-toggle]');
+          const del = event.target.closest('[data-del]');
+          if (toggle) {
+            lists[id][Number(toggle.dataset.toggle)].done = toggle.checked;
+            render();
+            save();
+          } else if (del) {
+            lists[id].splice(Number(del.dataset.del), 1);
+            render();
+            save();
+          }
+        });
 
-      todoListEl.addEventListener('dragend', () => {
-        if (!dragEl) return;
-        dragEl.classList.remove('dragging');
-        dragEl = null;
-        const order = [...todoListEl.querySelectorAll('.todo-item')].map((el) =>
-          Number(el.dataset.index)
-        );
-        todos = order.map((i) => todos[i]);
-        renderTodos();
-        saveTodos();
-      });
+        boxEl.querySelector('.todo-clear').addEventListener('click', () => {
+          lists[id] = lists[id].filter((todo) => !todo.done);
+          render();
+          save();
+        });
 
-      document.getElementById('todo-clear').addEventListener('click', () => {
-        todos = todos.filter((todo) => !todo.done);
-        renderTodos();
-        saveTodos();
-      });
+        // Drag to reorder: move the dragged row live as the pointer passes row
+        // midpoints, then rebuild the list from DOM order on release.
+        let dragEl = null;
+
+        listEl.addEventListener('dragstart', (event) => {
+          const item = event.target.closest('.todo-item');
+          if (!item) return;
+          dragEl = item;
+          item.classList.add('dragging');
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', '');
+        });
+
+        listEl.addEventListener('dragover', (event) => {
+          if (!dragEl) return;
+          event.preventDefault();
+          const over = event.target.closest('.todo-item');
+          if (!over || over === dragEl) return;
+          const rect = over.getBoundingClientRect();
+          const before = event.clientY < rect.top + rect.height / 2;
+          listEl.insertBefore(dragEl, before ? over : over.nextSibling);
+        });
+
+        listEl.addEventListener('dragend', () => {
+          if (!dragEl) return;
+          dragEl.classList.remove('dragging');
+          dragEl = null;
+          const order = [...listEl.querySelectorAll('.todo-item')].map((el) =>
+            Number(el.dataset.index)
+          );
+          lists[id] = order.map((i) => lists[id][i]);
+          render();
+          save();
+        });
+      }
+
+      function renderLists() {
+        for (const render of Object.values(listRenderers)) render();
+      }
 
       // ---------- login / init ----------
 
@@ -923,21 +1214,27 @@
 
       document.getElementById('refresh-btn').addEventListener('click', () => init(true));
 
+      document.querySelectorAll('.win').forEach(setupWindow);
+      document.querySelectorAll('.list-win').forEach(setupList);
+
       async function init(fresh = false) {
         try {
           statusEl.textContent = 'Loading…';
-          const [repoData, todoData, pinData] = await Promise.all([
+          const [repoData, listData, pinData, layoutData] = await Promise.all([
             api(`/api/repos${fresh ? '?fresh=1' : ''}`),
-            api('/api/todos'),
+            api('/api/lists'),
             api('/api/pins'),
+            api('/api/layout'),
           ]);
           repos = repoData.repos;
           tokenPresent = repoData.tokenPresent;
-          todos = todoData;
+          lists = listData;
           pins = pinData;
+          if (!fresh) layout = layoutData;
           showDesk();
+          applyLayout();
           renderRepos();
-          renderTodos();
+          renderLists();
         } catch (error) {
           if (error instanceof AuthError) return;
           statusEl.textContent = error.message;

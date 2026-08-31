@@ -202,6 +202,21 @@ async function handleRepos(url, env) {
   }
 }
 
+const LIST_IDS = ['todo', 'writing', 'today'];
+const BOX_IDS = ['repos', 'todo', 'writing', 'today'];
+
+function validLayout(body) {
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) return false;
+  return Object.entries(body).every(
+    ([id, box]) =>
+      BOX_IDS.includes(id) &&
+      box &&
+      ['x', 'y', 'w', 'h', 'z'].every(
+        (prop) => typeof box[prop] === 'number' && Number.isFinite(box[prop])
+      )
+  );
+}
+
 function validTodos(body) {
   return (
     Array.isArray(body) &&
@@ -272,15 +287,46 @@ export default {
         return await handleRepos(url, env);
       }
 
-      if (path === '/api/todos' && method === 'GET') {
-        const todos = (await env.DESK_STORE.get('todos', 'json')) || [];
-        return json(todos);
+      if (path === '/api/lists' && method === 'GET') {
+        const result = {};
+        await Promise.all(
+          LIST_IDS.map(async (id) => {
+            result[id] = await env.DESK_STORE.get(`list:${id}`, 'json');
+          })
+        );
+        // Migrate the pre-multi-list 'todos' key into the "To do" list.
+        if (!result.todo) {
+          const legacy = await env.DESK_STORE.get('todos', 'json');
+          if (legacy) {
+            result.todo = legacy;
+            await env.DESK_STORE.put('list:todo', JSON.stringify(legacy));
+          }
+        }
+        for (const id of LIST_IDS) {
+          if (!result[id]) result[id] = [];
+        }
+        return json(result);
       }
 
-      if (path === '/api/todos' && method === 'PUT') {
+      const listMatch = path.match(/^\/api\/lists\/([a-z]+)$/);
+      if (listMatch && method === 'PUT') {
+        const id = listMatch[1];
+        if (!LIST_IDS.includes(id)) return json({ error: 'Unknown list.' }, 404);
         const body = await request.json();
-        if (!validTodos(body)) return json({ error: 'Invalid to-do list.' }, 400);
-        await env.DESK_STORE.put('todos', JSON.stringify(body));
+        if (!validTodos(body)) return json({ error: 'Invalid list.' }, 400);
+        await env.DESK_STORE.put(`list:${id}`, JSON.stringify(body));
+        return json({ ok: true });
+      }
+
+      if (path === '/api/layout' && method === 'GET') {
+        const layout = (await env.DESK_STORE.get('layout', 'json')) || {};
+        return json(layout);
+      }
+
+      if (path === '/api/layout' && method === 'PUT') {
+        const body = await request.json();
+        if (!validLayout(body)) return json({ error: 'Invalid layout.' }, 400);
+        await env.DESK_STORE.put('layout', JSON.stringify(body));
         return json({ ok: true });
       }
 
