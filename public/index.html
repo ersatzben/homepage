@@ -637,6 +637,28 @@
         font-size: 13px;
       }
 
+      .rain-chart {
+        width: 100%;
+        margin-top: 0.7rem;
+      }
+
+      .rain-chart[hidden] {
+        display: none;
+      }
+
+      .rain-chart svg {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      .rain-caption {
+        font-size: 11px;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+        margin-top: 0.2rem;
+      }
+
       /* ---------- small screens: stack the windows ---------- */
 
       @media (max-width: 860px) {
@@ -793,6 +815,8 @@
           <hr class="clock-rule" />
           <div class="weather-now" id="weather-now">Fetching weather…</div>
           <div class="weather-range" id="weather-range"></div>
+          <div class="rain-chart" id="rain-chart" hidden></div>
+          <div class="rain-caption" id="rain-caption"></div>
         </div>
         <div class="win-resize"></div>
       </section>
@@ -924,7 +948,7 @@
         todo: { x: 690, y: 20, w: 340, h: 300, z: 2 },
         writing: { x: 690, y: 340, w: 340, h: 300, z: 3 },
         today: { x: 1050, y: 20, w: 340, h: 300, z: 4 },
-        clock: { x: 1050, y: 340, w: 340, h: 240, z: 5 },
+        clock: { x: 1050, y: 340, w: 340, h: 330, z: 5 },
       };
 
       let layout = {};
@@ -1273,7 +1297,8 @@
       const WEATHER_URL =
         'https://api.open-meteo.com/v1/forecast?latitude=51.5072&longitude=-0.1276' +
         '&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min' +
-        '&forecast_days=1&timezone=auto';
+        '&minutely_15=precipitation&forecast_minutely_15=96' +
+        '&hourly=precipitation_probability&forecast_days=2&timezone=auto';
 
       const WMO_CODES = {
         0: 'Clear',
@@ -1319,6 +1344,71 @@
         });
       }
 
+      // 48 bars of 15-minutely rain over the next 12 h, with the hourly rain
+      // probability as a pale wash behind them.
+      function renderRainChart(data) {
+        const chartEl = document.getElementById('rain-chart');
+        const captionEl = document.getElementById('rain-caption');
+        try {
+          const now = Date.now();
+          const m = data.minutely_15;
+          const start = m.time.findIndex((t) => new Date(t).getTime() > now - 15 * 60 * 1000);
+          if (start === -1) throw new Error();
+          const amounts = m.precipitation.slice(start, start + 48).map((v) => v ?? 0);
+          if (amounts.length < 8) throw new Error();
+
+          const h = data.hourly;
+          const hStart = h.time.findIndex((t) => new Date(t).getTime() > now - 60 * 60 * 1000);
+          const probs =
+            hStart === -1
+              ? []
+              : h.precipitation_probability.slice(hStart, hStart + 12).map((v) => v ?? 0);
+
+          const W = 480;
+          const H = 48;
+          const maxA = Math.max(0.5, ...amounts);
+          let svg = `<svg viewBox="0 0 ${W} 62" xmlns="http://www.w3.org/2000/svg" aria-label="Rain forecast, next 12 hours">`;
+          probs.forEach((p, i) => {
+            const barH = (p / 100) * H;
+            if (barH > 0) {
+              svg += `<rect x="${i * 40}" y="${H - barH}" width="40" height="${barH}" fill="var(--rule)" opacity="0.55"/>`;
+            }
+          });
+          amounts.forEach((a, i) => {
+            const barH = Math.min(H, (a / maxA) * H);
+            if (barH > 0) {
+              svg += `<rect x="${i * 10 + 1.5}" y="${H - Math.max(2, barH)}" width="7" height="${Math.max(2, barH)}" rx="1" fill="var(--accent)"/>`;
+            }
+          });
+          svg += `<line x1="0" y1="${H}" x2="${W}" y2="${H}" stroke="var(--rule)" stroke-width="1"/>`;
+          const labels = [
+            ['now', 1, 'start'],
+            ['+3h', 120, 'middle'],
+            ['+6h', 240, 'middle'],
+            ['+9h', 360, 'middle'],
+            ['+12h', 479, 'end'],
+          ];
+          for (const [text, x, anchor] of labels) {
+            svg += `<text x="${x}" y="60" text-anchor="${anchor}" font-size="9.5" fill="var(--faint)" font-family="inherit">${text}</text>`;
+          }
+          svg += '</svg>';
+          chartEl.innerHTML = svg;
+          chartEl.hidden = false;
+
+          const total = amounts.reduce((sum, v) => sum + v, 0);
+          const maxProb = Math.max(0, ...probs);
+          if (total < 0.05) {
+            captionEl.textContent =
+              maxProb >= 20 ? `Dry for the next 12 h · up to ${maxProb}% chance` : 'Dry for the next 12 h';
+          } else {
+            captionEl.textContent = `${total.toFixed(1)} mm over the next 12 h`;
+          }
+        } catch (error) {
+          chartEl.hidden = true;
+          captionEl.textContent = '';
+        }
+      }
+
       async function loadWeather() {
         const nowEl = document.getElementById('weather-now');
         const rangeEl = document.getElementById('weather-range');
@@ -1333,10 +1423,13 @@
           nowEl.classList.remove('unavailable');
           nowEl.innerHTML = `<span class="temp">${temp}°</span>${esc(condition)}`;
           rangeEl.textContent = `H ${high}° · L ${low}°`;
+          renderRainChart(data);
         } catch (error) {
           nowEl.classList.add('unavailable');
           nowEl.textContent = 'Weather unavailable.';
           rangeEl.textContent = '';
+          document.getElementById('rain-chart').hidden = true;
+          document.getElementById('rain-caption').textContent = '';
         }
       }
 
