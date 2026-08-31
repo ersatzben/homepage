@@ -575,6 +575,68 @@
         border-color: transparent;
       }
 
+      /* ---------- clock & weather ---------- */
+
+      .clock-body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 0.15rem;
+        padding: 0.75rem 1rem 1rem;
+      }
+
+      .clock-time {
+        font-family: 'Newsreader', Georgia, serif;
+        font-size: clamp(34px, 18cqw, 56px);
+        font-weight: 500;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.02em;
+      }
+
+      .clock-win .win-body {
+        container-type: inline-size;
+      }
+
+      .clock-date {
+        font-family: 'Newsreader', Georgia, serif;
+        font-style: italic;
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      .clock-rule {
+        width: 60px;
+        border: none;
+        border-top: 1px solid var(--rule);
+        margin: 0.6rem 0;
+      }
+
+      .weather-now {
+        font-size: 15px;
+      }
+
+      .weather-now .temp {
+        font-family: 'Newsreader', Georgia, serif;
+        font-weight: 600;
+        font-size: 19px;
+        margin-right: 0.35rem;
+      }
+
+      .weather-range {
+        font-size: 12px;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .weather-now.unavailable {
+        color: var(--faint);
+        font-style: italic;
+        font-size: 13px;
+      }
+
       /* ---------- small screens: stack the windows ---------- */
 
       @media (max-width: 860px) {
@@ -723,6 +785,18 @@
         <div class="win-resize"></div>
       </section>
 
+      <section class="win clock-win" data-box="clock">
+        <div class="win-title"><span class="win-title-text">Outside</span></div>
+        <div class="win-body clock-body">
+          <div class="clock-time" id="clock-time">–:–</div>
+          <div class="clock-date" id="clock-date"></div>
+          <hr class="clock-rule" />
+          <div class="weather-now" id="weather-now">Fetching weather…</div>
+          <div class="weather-range" id="weather-range"></div>
+        </div>
+        <div class="win-resize"></div>
+      </section>
+
       <section class="win list-win" data-box="today" data-list="today">
         <div class="win-title"><span class="win-title-text">Today</span></div>
         <div class="win-body">
@@ -846,24 +920,28 @@
       // ---------- windows ----------
 
       const DEFAULT_LAYOUT = {
-        repos: { x: 24, y: 24, w: 640, h: 0, z: 1 },
-        todo: { x: 688, y: 24, w: 340, h: 300, z: 2 },
-        writing: { x: 688, y: 348, w: 340, h: 300, z: 3 },
-        today: { x: 1052, y: 24, w: 340, h: 300, z: 4 },
+        repos: { x: 20, y: 20, w: 640, h: 0, z: 1 },
+        todo: { x: 690, y: 20, w: 340, h: 300, z: 2 },
+        writing: { x: 690, y: 340, w: 340, h: 300, z: 3 },
+        today: { x: 1050, y: 20, w: 340, h: 300, z: 4 },
+        clock: { x: 1050, y: 340, w: 340, h: 240, z: 5 },
       };
 
       let layout = {};
       let topZ = 10;
       const winEls = {};
 
+      // Invisible 10px grid: positions and sizes always land on it.
+      const snap = (v) => Math.round(v / 10) * 10;
+
       function clampBox(box) {
         const deskW = deskEl.clientWidth;
         const deskH = deskEl.clientHeight;
         const b = { ...box };
-        b.w = Math.max(260, Math.min(b.w, deskW));
-        b.h = Math.max(160, Math.min(b.h, deskH));
-        b.x = Math.max(0, Math.min(b.x, deskW - 100));
-        b.y = Math.max(0, Math.min(b.y, deskH - 60));
+        b.w = Math.max(260, Math.min(snap(b.w), deskW));
+        b.h = Math.max(160, Math.min(snap(b.h), deskH));
+        b.x = Math.max(0, Math.min(snap(b.x), deskW - 100));
+        b.y = Math.max(0, Math.min(snap(b.y), deskH - 60));
         return b;
       }
 
@@ -1188,6 +1266,84 @@
       function renderLists() {
         for (const render of Object.values(listRenderers)) render();
       }
+
+      // ---------- clock & weather ----------
+
+      // Open-Meteo, no key needed. London; adjust coordinates to move the desk.
+      const WEATHER_URL =
+        'https://api.open-meteo.com/v1/forecast?latitude=51.5072&longitude=-0.1276' +
+        '&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min' +
+        '&forecast_days=1&timezone=auto';
+
+      const WMO_CODES = {
+        0: 'Clear',
+        1: 'Mostly clear',
+        2: 'Partly cloudy',
+        3: 'Overcast',
+        45: 'Fog',
+        48: 'Freezing fog',
+        51: 'Light drizzle',
+        53: 'Drizzle',
+        55: 'Heavy drizzle',
+        56: 'Freezing drizzle',
+        57: 'Freezing drizzle',
+        61: 'Light rain',
+        63: 'Rain',
+        65: 'Heavy rain',
+        66: 'Freezing rain',
+        67: 'Freezing rain',
+        71: 'Light snow',
+        73: 'Snow',
+        75: 'Heavy snow',
+        77: 'Snow grains',
+        80: 'Light showers',
+        81: 'Showers',
+        82: 'Heavy showers',
+        85: 'Snow showers',
+        86: 'Snow showers',
+        95: 'Thunderstorm',
+        96: 'Thunderstorm',
+        99: 'Thunderstorm',
+      };
+
+      function tickClock() {
+        const now = new Date();
+        document.getElementById('clock-time').textContent = now.toLocaleTimeString('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        document.getElementById('clock-date').textContent = now.toLocaleDateString('en-GB', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+        });
+      }
+
+      async function loadWeather() {
+        const nowEl = document.getElementById('weather-now');
+        const rangeEl = document.getElementById('weather-range');
+        try {
+          const response = await fetch(WEATHER_URL);
+          if (!response.ok) throw new Error();
+          const data = await response.json();
+          const temp = Math.round(data.current.temperature_2m);
+          const condition = WMO_CODES[data.current.weather_code] || '';
+          const high = Math.round(data.daily.temperature_2m_max[0]);
+          const low = Math.round(data.daily.temperature_2m_min[0]);
+          nowEl.classList.remove('unavailable');
+          nowEl.innerHTML = `<span class="temp">${temp}°</span>${esc(condition)}`;
+          rangeEl.textContent = `H ${high}° · L ${low}°`;
+        } catch (error) {
+          nowEl.classList.add('unavailable');
+          nowEl.textContent = 'Weather unavailable.';
+          rangeEl.textContent = '';
+        }
+      }
+
+      tickClock();
+      setInterval(tickClock, 10 * 1000);
+      loadWeather();
+      setInterval(loadWeather, 30 * 60 * 1000);
 
       // ---------- login / init ----------
 

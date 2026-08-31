@@ -203,7 +203,7 @@ async function handleRepos(url, env) {
 }
 
 const LIST_IDS = ['todo', 'writing', 'today'];
-const BOX_IDS = ['repos', 'todo', 'writing', 'today'];
+const BOX_IDS = ['repos', 'todo', 'writing', 'today', 'clock'];
 
 function validLayout(body) {
   if (typeof body !== 'object' || body === null || Array.isArray(body)) return false;
