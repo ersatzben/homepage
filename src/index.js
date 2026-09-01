@@ -203,7 +203,7 @@ async function handleRepos(url, env) {
 }
 
 const LIST_IDS = ['todo', 'writing', 'today'];
-const BOX_IDS = ['repos', 'todo', 'writing', 'today', 'clock'];
+const BOX_IDS = ['repos', 'todo', 'writing', 'today', 'clock', 'idea'];
 
 function validLayout(body) {
   if (typeof body !== 'object' || body === null || Array.isArray(body)) return false;
@@ -226,7 +226,10 @@ function validTodos(body) {
         item &&
         typeof item.text === 'string' &&
         item.text.length <= 1000 &&
-        typeof item.done === 'boolean'
+        (item.done === undefined || typeof item.done === 'boolean') &&
+        (item.notes === undefined ||
+          (typeof item.notes === 'string' && item.notes.length <= 20000)) &&
+        (item.link === undefined || (typeof item.link === 'string' && item.link.length <= 1000))
     )
   );
 }

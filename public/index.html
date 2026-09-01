@@ -575,6 +575,118 @@
         border-color: transparent;
       }
 
+      /* ---------- writing ideas ---------- */
+
+      .idea-open {
+        border: none;
+        background: none;
+        padding: 0;
+        flex: 1;
+        text-align: left;
+        font-family: inherit;
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--ink);
+        cursor: pointer;
+        overflow-wrap: anywhere;
+      }
+
+      .idea-open:hover {
+        border-color: transparent;
+        color: var(--accent);
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        text-underline-offset: 3px;
+      }
+
+      .idea-doc-link {
+        font-size: 12px;
+        color: var(--accent);
+        text-decoration: none;
+        padding: 0 2px;
+      }
+
+      .idea-flag {
+        color: var(--faint);
+        font-size: 11px;
+        padding: 0 2px;
+        cursor: default;
+      }
+
+      .win.hidden {
+        display: none !important;
+      }
+
+      .win-close {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        padding: 3px;
+        border: none;
+        background: var(--pad);
+        cursor: pointer;
+      }
+
+      .win-close::before {
+        content: '';
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 1.5px solid var(--ink);
+        background: var(--pad);
+      }
+
+      .win-close:hover::before {
+        background: var(--rule);
+      }
+
+      .idea-body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        padding-top: 0.75rem;
+      }
+
+      .idea-title-input {
+        font-family: 'Newsreader', Georgia, serif;
+        font-size: 17px !important;
+        font-weight: 600;
+        padding: 0.4rem 0.5rem !important;
+      }
+
+      #idea-notes {
+        flex: 1;
+        resize: none;
+        min-height: 80px;
+        padding: 0.5rem;
+        border: 1px solid var(--rule);
+        border-radius: 4px;
+        background: #fff;
+        color: var(--ink);
+        font-size: 13px;
+        line-height: 1.6;
+        font-family: inherit;
+      }
+
+      #idea-notes:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+
+      .idea-link-row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+
+      .idea-link-row input {
+        flex: 1;
+        min-width: 0;
+      }
+
       /* ---------- clock & weather ---------- */
 
       .clock-body {
@@ -791,7 +903,7 @@
         <div class="win-resize"></div>
       </section>
 
-      <section class="win list-win" data-box="writing" data-list="writing">
+      <section class="win list-win" data-box="writing" data-list="writing" data-mode="ideas">
         <div class="win-title"><span class="win-title-text">Writing ideas</span></div>
         <div class="win-body">
           <div class="todo-add">
@@ -801,7 +913,22 @@
           <ul class="todo-list"></ul>
           <div class="todo-foot">
             <span class="todo-count"></span>
-            <button type="button" class="todo-clear">clear done</button>
+          </div>
+        </div>
+        <div class="win-resize"></div>
+      </section>
+
+      <section class="win idea-win hidden" data-box="idea">
+        <div class="win-title">
+          <button type="button" class="win-close" id="idea-close" title="Close"></button>
+          <span class="win-title-text">Idea</span>
+        </div>
+        <div class="win-body idea-body">
+          <input type="text" id="idea-title" class="idea-title-input" placeholder="Title" aria-label="Idea title" />
+          <textarea id="idea-notes" placeholder="Notes…" aria-label="Idea notes"></textarea>
+          <div class="idea-link-row">
+            <input type="text" id="idea-link" placeholder="Google Docs link…" aria-label="Google Docs link" />
+            <a id="idea-link-open" class="homepage-link" rel="noopener noreferrer" hidden>open&nbsp;↗</a>
           </div>
         </div>
         <div class="win-resize"></div>
@@ -949,6 +1076,7 @@
         writing: { x: 690, y: 340, w: 340, h: 300, z: 3 },
         today: { x: 1050, y: 20, w: 340, h: 300, z: 4 },
         clock: { x: 1050, y: 340, w: 340, h: 330, z: 5 },
+        idea: { x: 420, y: 140, w: 400, h: 360, z: 6 },
       };
 
       let layout = {};
@@ -1182,15 +1310,45 @@
       // ---------- lists ----------
 
       const listRenderers = {};
+      const listSavers = {};
 
       function setupList(boxEl) {
         const id = boxEl.dataset.list;
+        const ideasMode = boxEl.dataset.mode === 'ideas';
         const listEl = boxEl.querySelector('.todo-list');
         const input = boxEl.querySelector('.todo-input');
         const countEl = boxEl.querySelector('.todo-count');
 
         function save() {
           api(`/api/lists/${id}`, { method: 'PUT', body: JSON.stringify(lists[id]) }).catch(() => {});
+        }
+        listSavers[id] = save;
+
+        function todoRow(todo, i) {
+          return `
+            <li class="todo-item ${todo.done ? 'done' : ''}" draggable="true" data-index="${i}">
+              <span class="todo-drag" title="Drag to reorder">⠿</span>
+              <input type="checkbox" id="todo-${id}-${i}" data-toggle="${i}" ${todo.done ? 'checked' : ''} />
+              <label for="todo-${id}-${i}">${esc(todo.text)}</label>
+              <button class="todo-del" data-del="${i}" title="Remove">×</button>
+            </li>
+          `;
+        }
+
+        function ideaRow(idea, i) {
+          const docLink = idea.link
+            ? `<a class="idea-doc-link" href="${esc(/^https?:\/\//.test(idea.link) ? idea.link : `https://${idea.link}`)}"
+                 rel="noopener noreferrer" title="Open doc">↗</a>`
+            : '';
+          const flag = !idea.link && idea.notes ? '<span class="idea-flag" title="Has notes">¶</span>' : '';
+          return `
+            <li class="todo-item" draggable="true" data-index="${i}">
+              <span class="todo-drag" title="Drag to reorder">⠿</span>
+              <button class="idea-open" data-open="${i}" title="Open idea">${esc(idea.text)}</button>
+              ${flag}${docLink}
+              <button class="todo-del" data-del="${i}" title="Remove">×</button>
+            </li>
+          `;
         }
 
         function render() {
@@ -1199,27 +1357,23 @@
             listEl.innerHTML = '<li class="todo-empty">Nothing on the list.</li>';
           } else {
             listEl.innerHTML = items
-              .map(
-                (todo, i) => `
-                  <li class="todo-item ${todo.done ? 'done' : ''}" draggable="true" data-index="${i}">
-                    <span class="todo-drag" title="Drag to reorder">⠿</span>
-                    <input type="checkbox" id="todo-${id}-${i}" data-toggle="${i}" ${todo.done ? 'checked' : ''} />
-                    <label for="todo-${id}-${i}">${esc(todo.text)}</label>
-                    <button class="todo-del" data-del="${i}" title="Remove">×</button>
-                  </li>
-                `
-              )
+              .map((item, i) => (ideasMode ? ideaRow(item, i) : todoRow(item, i)))
               .join('');
           }
-          const open = items.filter((todo) => !todo.done).length;
-          countEl.textContent = items.length === 0 ? '' : `${open} open`;
+          if (ideasMode) {
+            countEl.textContent =
+              items.length === 0 ? '' : `${items.length} idea${items.length === 1 ? '' : 's'}`;
+          } else {
+            const open = items.filter((todo) => !todo.done).length;
+            countEl.textContent = items.length === 0 ? '' : `${open} open`;
+          }
         }
         listRenderers[id] = render;
 
         function add() {
           const text = input.value.trim();
           if (!text) return;
-          lists[id].push({ text, done: false });
+          lists[id].push(ideasMode ? { text, notes: '', link: '' } : { text, done: false });
           input.value = '';
           render();
           save();
@@ -1233,23 +1387,30 @@
 
         listEl.addEventListener('click', (event) => {
           const toggle = event.target.closest('[data-toggle]');
+          const open = event.target.closest('[data-open]');
           const del = event.target.closest('[data-del]');
           if (toggle) {
             lists[id][Number(toggle.dataset.toggle)].done = toggle.checked;
             render();
             save();
+          } else if (open) {
+            openIdeaWin(lists[id][Number(open.dataset.open)]);
           } else if (del) {
-            lists[id].splice(Number(del.dataset.del), 1);
+            const [removed] = lists[id].splice(Number(del.dataset.del), 1);
+            if (removed === openIdea) closeIdeaWin();
             render();
             save();
           }
         });
 
-        boxEl.querySelector('.todo-clear').addEventListener('click', () => {
-          lists[id] = lists[id].filter((todo) => !todo.done);
-          render();
-          save();
-        });
+        const clearBtn = boxEl.querySelector('.todo-clear');
+        if (clearBtn) {
+          clearBtn.addEventListener('click', () => {
+            lists[id] = lists[id].filter((todo) => !todo.done);
+            render();
+            save();
+          });
+        }
 
         // Drag to reorder: move the dragged row live as the pointer passes row
         // midpoints, then rebuild the list from DOM order on release.
@@ -1290,6 +1451,59 @@
       function renderLists() {
         for (const render of Object.values(listRenderers)) render();
       }
+
+      // ---------- idea subwindow ----------
+
+      const ideaWinEl = document.querySelector('[data-box="idea"]');
+      const ideaTitleEl = document.getElementById('idea-title');
+      const ideaNotesEl = document.getElementById('idea-notes');
+      const ideaLinkEl = document.getElementById('idea-link');
+      const ideaLinkOpenEl = document.getElementById('idea-link-open');
+      let openIdea = null;
+
+      function updateIdeaLinkAnchor() {
+        const link = (openIdea?.link || '').trim();
+        if (link) {
+          ideaLinkOpenEl.href = /^https?:\/\//.test(link) ? link : `https://${link}`;
+          ideaLinkOpenEl.hidden = false;
+        } else {
+          ideaLinkOpenEl.hidden = true;
+        }
+      }
+
+      function openIdeaWin(idea) {
+        openIdea = idea;
+        ideaTitleEl.value = idea.text;
+        ideaNotesEl.value = idea.notes || '';
+        ideaLinkEl.value = idea.link || '';
+        updateIdeaLinkAnchor();
+        ideaWinEl.classList.remove('hidden');
+        bringToFront('idea');
+        ideaNotesEl.focus();
+      }
+
+      function closeIdeaWin() {
+        ideaWinEl.classList.add('hidden');
+        openIdea = null;
+      }
+
+      document.getElementById('idea-close').addEventListener('click', closeIdeaWin);
+
+      let ideaSaveTimer = null;
+      function ideaChanged() {
+        if (!openIdea) return;
+        openIdea.text = ideaTitleEl.value.trim() || 'Untitled';
+        openIdea.notes = ideaNotesEl.value;
+        openIdea.link = ideaLinkEl.value.trim();
+        updateIdeaLinkAnchor();
+        listRenderers.writing();
+        clearTimeout(ideaSaveTimer);
+        ideaSaveTimer = setTimeout(() => listSavers.writing(), 600);
+      }
+
+      ideaTitleEl.addEventListener('input', ideaChanged);
+      ideaNotesEl.addEventListener('input', ideaChanged);
+      ideaLinkEl.addEventListener('input', ideaChanged);
 
       // ---------- clock & weather ----------
 
