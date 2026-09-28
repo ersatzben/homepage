@@ -3,6 +3,7 @@
   "name": "desk",
   "main": "src/index.js",
   "compatibility_date": "2026-08-01",
+  "routes": [{ "pattern": "desk.ersatzben.com", "custom_domain": true }],
   "workers_dev": true,
   "assets": {
     "directory": "./public",

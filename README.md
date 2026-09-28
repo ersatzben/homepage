@@ -1,6 +1,6 @@
 # desk
 
-Personal homepage running as a Cloudflare Worker at https://desk.lightnotes.workers.dev:
+Personal homepage running as a Cloudflare Worker at https://desk.ersatzben.com (also desk.lightnotes.workers.dev):
 to-dos, links, GitHub repos, and a rain outlook on one page.
 
 - `public/index.html`, `app.js`, `app.css` — the page. Links are plain HTML.
