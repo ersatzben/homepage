@@ -1,7 +1,7 @@
 # desk
 
 Personal homepage running as a Cloudflare Worker at https://desk.ersatzben.com (also desk.lightnotes.workers.dev):
-to-dos, links, GitHub repos, and a rain outlook on one page.
+to-dos, links, GitHub repos (mine and the science-works org's), and a rain outlook on one page.
 
 - `public/index.html`, `app.js`, `app.css` — the page. Links are plain HTML.
 - `public/store.js` — to-do storage (browser `localStorage`, key `desk:tasks`).
@@ -20,6 +20,8 @@ Set with `npx wrangler secret put <NAME>`:
 
 - `PASSPHRASE` — site login
 - `GITHUB_TOKEN` — fine-grained PAT, all repos, Metadata read (Pages read for custom-domain links)
+- `GITHUB_ORG_TOKEN` — optional: the same, with science-works as resource owner. Without it only
+  the org's public repos are listed
 - `SESSION_SECRET` — random string for signing session cookies
 
 ## Develop & deploy

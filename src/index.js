@@ -1,6 +1,7 @@
 import { readTasks, validTasks, writeTasks } from './tasks.js';
 
 const HANDLE = 'ersatzben';
+const ORGS = ['science-works'];
 const GH_API = 'https://api.github.com';
 const SESSION_COOKIE = 'desk_session';
 const SESSION_SECONDS = 30 * 24 * 60 * 60;
@@ -78,24 +79,48 @@ async function isAuthenticated(request, env) {
   return safeEqual(signature, expected);
 }
 
-function githubHeaders(env) {
+function githubHeaders(token) {
   const headers = {
     Accept: 'application/vnd.github+json',
     'User-Agent': 'desk-worker',
   };
-  if (env.GITHUB_TOKEN) headers.Authorization = `Bearer ${env.GITHUB_TOKEN}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
+}
+
+// A fine-grained token covers one owner, so org repos use GITHUB_ORG_TOKEN when
+// set; GITHUB_TOKEN can still read the org's public repos.
+function tokenFor(owner, env) {
+  return owner === HANDLE ? env.GITHUB_TOKEN : env.GITHUB_ORG_TOKEN || env.GITHUB_TOKEN;
 }
 
 // The Pages config carries the custom domain (e.g. science.works) when one is
 // set. Requires the token to have Pages: read — returns null without it.
-async function fetchPagesUrl(repoName, env) {
-  const response = await fetch(`${GH_API}/repos/${HANDLE}/${repoName}/pages`, {
-    headers: githubHeaders(env),
+async function fetchPagesUrl(owner, repoName, env) {
+  const response = await fetch(`${GH_API}/repos/${owner}/${repoName}/pages`, {
+    headers: githubHeaders(tokenFor(owner, env)),
   });
   if (!response.ok) return null;
   const data = await response.json();
   return data.html_url || null;
+}
+
+async function fetchRepoPage(endpoint, token) {
+  const response = await fetch(endpoint, { headers: githubHeaders(token) });
+  if (!response.ok) {
+    throw new Error(`GitHub responded ${response.status} for ${endpoint}`);
+  }
+  return response.json();
+}
+
+async function fetchOrgRepos(org, env) {
+  try {
+    return await fetchRepoPage(`${GH_API}/orgs/${org}/repos?per_page=100&type=all&sort=pushed`, tokenFor(org, env));
+  } catch (error) {
+    // One org failing shouldn't hide the rest of the list.
+    console.error(error.message);
+    return [];
+  }
 }
 
 async function fetchRepos(env) {
@@ -103,14 +128,18 @@ async function fetchRepos(env) {
     ? `${GH_API}/user/repos?per_page=100&type=all&sort=pushed`
     : `${GH_API}/users/${HANDLE}/repos?per_page=100&sort=pushed`;
 
-  const response = await fetch(endpoint, { headers: githubHeaders(env) });
-  if (!response.ok) {
-    throw new Error(`GitHub responded ${response.status}`);
-  }
+  const [own, ...orgs] = await Promise.all([
+    fetchRepoPage(endpoint, env.GITHUB_TOKEN),
+    ...ORGS.map((org) => fetchOrgRepos(org, env)),
+  ]);
 
-  const repos = (await response.json())
-    .filter((repo) => repo.owner.login === HANDLE)
+  const seen = new Set();
+  const repos = [...own.filter((repo) => repo.owner.login === HANDLE), ...orgs.flat()]
+    .filter((repo) => !seen.has(repo.full_name) && seen.add(repo.full_name))
     .map((repo) => ({
+      // Own repos keep the bare name so existing stars still match.
+      key: repo.owner.login === HANDLE ? repo.name : repo.full_name,
+      owner: repo.owner.login,
       name: repo.name,
       html_url: repo.html_url,
       homepage: repo.homepage,
@@ -129,7 +158,7 @@ async function fetchRepos(env) {
       .filter((repo) => repo.has_pages)
       .map(async (repo) => {
         try {
-          repo.pages_url = await fetchPagesUrl(repo.name, env);
+          repo.pages_url = await fetchPagesUrl(repo.owner, repo.name, env);
         } catch (error) {
           repo.pages_url = null;
         }
@@ -141,18 +170,23 @@ async function fetchRepos(env) {
 
 async function handleRepos(url, env) {
   const tokenPresent = Boolean(env.GITHUB_TOKEN);
+  const orgTokenPresent = Boolean(env.GITHUB_ORG_TOKEN);
   const fresh = url.searchParams.get('fresh') === '1';
   const cached = await env.DESK_STORE.get('repos-cache', 'json');
   // A cache written without a token holds public repos only; ignore it once
-  // a token exists.
-  const cacheUsable = cached && Boolean(cached.tokenPresent) === tokenPresent;
+  // a token exists. Likewise for the org token and caches from before ORGS.
+  const cacheUsable =
+    cached &&
+    Boolean(cached.tokenPresent) === tokenPresent &&
+    Boolean(cached.orgTokenPresent) === orgTokenPresent &&
+    String(cached.orgs) === String(ORGS);
   if (!fresh && cacheUsable && Date.now() - cached.fetchedAt < REPO_CACHE_SECONDS * 1000) {
     return json({ repos: cached.repos, cachedAt: cached.fetchedAt, tokenPresent });
   }
   try {
     const repos = await fetchRepos(env);
     const fetchedAt = Date.now();
-    await env.DESK_STORE.put('repos-cache', JSON.stringify({ fetchedAt, repos, tokenPresent }));
+    await env.DESK_STORE.put('repos-cache', JSON.stringify({ fetchedAt, repos, tokenPresent, orgTokenPresent, orgs: ORGS }));
     return json({ repos, cachedAt: fetchedAt, tokenPresent });
   } catch (error) {
     // GitHub is down or rate-limited: serve the stale cache rather than nothing.

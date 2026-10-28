@@ -42,7 +42,7 @@ test('pins round-trip, reject invalid bodies and cross-origin writes', async () 
 
 test('repos are served from a fresh cache without calling GitHub', async () => {
   const repos = [{ name: 'cached-repo' }];
-  await kv.put('repos-cache', JSON.stringify({ fetchedAt: Date.now(), repos, tokenPresent: false }));
+  await kv.put('repos-cache', JSON.stringify({ fetchedAt: Date.now(), repos, tokenPresent: false, orgTokenPresent: false, orgs: ['science-works'] }));
   const body = await (await request('/api/repos')).json();
   assert.deepEqual(body.repos, repos);
 });

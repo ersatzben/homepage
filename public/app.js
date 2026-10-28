@@ -258,17 +258,22 @@ function relative(iso) {
   return ago.format(Math.round(days / 365), 'year');
 }
 
+const VISIBLE_REPOS = 10;
+const repoKey = (repo) => repo.key ?? repo.name;
+const isOrgRepo = (repo) => repoKey(repo) !== repo.name;
+
 function repoItem(repo) {
-  const pinned = pins.includes(repo.name);
+  const pinned = pins.includes(repoKey(repo));
   const site = repo.pages_url || repo.homepage;
   return el('li', { className: repo.archived ? 'archived' : '' },
     el('button', {
       className: `pin${pinned ? ' on' : ''}`, ariaPressed: String(pinned),
       ariaLabel: `Star ${repo.name}`, title: pinned ? 'Unstar' : 'Star',
-      onclick: () => togglePin(repo.name),
+      onclick: () => togglePin(repoKey(repo)),
     }, icon(STAR)),
     el('span', { className: 'repo-name' },
       el('a', { href: repo.html_url, textContent: repo.name, title: repo.description ?? '' }),
+      isOrgRepo(repo) && el('span', { className: 'tag', textContent: repo.owner }),
       repo.private && el('span', { className: 'tag', textContent: 'private' }),
       site && el('a', { href: site, className: 'site', textContent: 'site', ariaLabel: `${repo.name} website` }),
     ),
@@ -278,12 +283,31 @@ function repoItem(repo) {
 
 function renderRepos() {
   const query = $('#repo-search').value.trim().toLowerCase();
-  const matches = repos.filter((r) => !query || `${r.name} ${r.description ?? ''}`.toLowerCase().includes(query));
-  const rank = (r) => (pins.includes(r.name) ? 0 : r.archived ? 2 : 1);
+  const matches = repos.filter((r) => !query || `${repoKey(r)} ${r.description ?? ''}`.toLowerCase().includes(query));
+  const rank = (r) => (pins.includes(repoKey(r)) ? 0 : r.archived ? 2 : 1);
   matches.sort((a, b) => rank(a) - rank(b)); // stable: keeps pushed order within groups
   $('#repo-list').replaceChildren(...matches.map(repoItem));
+  $('#repo-list').scrollTop = 0;
   $('#repo-status').textContent = matches.length ? '' : query ? `No repositories match “${query}”.` : 'No repositories yet.';
+  fitRepoList();
 }
+
+// Show the first VISIBLE_REPOS rows; the rest scroll. Measured rather than set
+// in CSS because rows grow when names or meta wrap at narrow widths.
+function fitRepoList() {
+  const list = $('#repo-list');
+  const last = list.children[VISIBLE_REPOS - 1];
+  list.style.maxHeight = list.children.length > VISIBLE_REPOS ? `${last.offsetTop - list.offsetTop + last.offsetHeight}px` : '';
+  updateRepoFade();
+}
+
+function updateRepoFade() {
+  const list = $('#repo-list');
+  list.classList.toggle('more', list.scrollHeight - list.scrollTop - list.clientHeight > 1);
+}
+
+new ResizeObserver(fitRepoList).observe($('.repos'));
+$('#repo-list').onscroll = updateRepoFade;
 
 async function togglePin(name) {
   const before = pins;
